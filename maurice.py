@@ -16,6 +16,12 @@ def on_ready():
     print("------")
 
 
+@bot.command(pass_context=True)
+@asyncio.coroutine
+def help(ctx):
+    yield from bot.say("I do not yet have a help page")
+
+
 @bot.command()
 @asyncio.coroutine
 def ping():
