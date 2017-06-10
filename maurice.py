@@ -4,8 +4,26 @@ import asyncio
 import sys
 import os
 
-bot = commands.Bot(command_prefix="m!", description="A very interesting bot")
+prefix = "."
+desc = ""
 
+def readSettings():
+    os.chdir(sys.path[0])
+    with open("bot.settings", "r") as settings:
+        global prefix
+        global desc        
+        prefix = settings.readline().strip()
+        desc = settings.readline().strip()
+
+def printSettings():
+    print("Prefix: " + prefix + "\tdesc: " + desc)
+        
+readSettings()
+printSettings()
+print("------")
+
+bot = commands.Bot(command_prefix=prefix, description=desc)
+bot.change_presence(game=discord.Game(name="use me"))
 
 @bot.event
 @asyncio.coroutine
@@ -18,9 +36,39 @@ def on_ready():
 
 @bot.command(pass_context=True)
 @asyncio.coroutine
-def help(ctx):
+def mhelp(ctx):
     yield from bot.say("I do not yet have a help page")
 
+
+@bot.command()
+@asyncio.coroutine
+def settings(setting="", *, value=""):
+    if value == "":
+        yield from bot.say("Invalid setting, usage " + prefix + "settings <prefix|desc> <value>")
+        return
+    if setting == "prefix":
+        bot.command_prefix = value
+        mode = 0
+    elif setting == "desc" or setting == "description":
+        bot.description = value
+        mode = 1
+    else:
+        yield from bot.say("Invalid setting, usage " + prefix + "settings <prefix|desc> <value>")
+        return
+
+    os.chdir(sys.path[0]) 
+    lines = []
+    with open("bot.settings", "r+") as settings:
+        lines = settings.readlines()
+        lines[mode] = value + "\n"
+        settings.seek(0)
+        settings.truncate()
+        for line in lines:
+            settings.write(line)
+
+    readSettings() # Update global variables
+    yield from bot.say("Updated settings!\nPrefix: " + prefix + "\nDescription: " + desc)
+    
 
 @bot.command()
 @asyncio.coroutine
@@ -63,9 +111,8 @@ def on_message(message):
 
 # Get key, initialize bot
 os.chdir(sys.path[0])
-secret = open("secret.key", "r")
-key = secret.readline().strip()
-secret.close()
+with open("secret.key", "r") as secret:
+    key = secret.readline().strip()
 
 bot.run(key)
 
