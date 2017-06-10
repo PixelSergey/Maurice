@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import discord
 from discord.ext import commands
 import asyncio
@@ -7,23 +9,26 @@ import os
 prefix = "."
 desc = ""
 
+
 def readSettings():
     os.chdir(sys.path[0])
     with open("bot.settings", "r") as settings:
         global prefix
-        global desc        
+        global desc
         prefix = settings.readline().strip()
         desc = settings.readline().strip()
 
+
 def printSettings():
     print("Prefix: " + prefix + "\tdesc: " + desc)
-        
+
 readSettings()
 printSettings()
 print("------")
 
 bot = commands.Bot(command_prefix=prefix, description=desc)
 bot.change_presence(game=discord.Game(name="use me"))
+
 
 @bot.event
 @asyncio.coroutine
@@ -56,7 +61,7 @@ def settings(setting="", *, value=""):
         yield from bot.say("Invalid setting, usage " + prefix + "settings <prefix|desc> <value>")
         return
 
-    os.chdir(sys.path[0]) 
+    os.chdir(sys.path[0])
     lines = []
     with open("bot.settings", "r+") as settings:
         lines = settings.readlines()
@@ -66,9 +71,9 @@ def settings(setting="", *, value=""):
         for line in lines:
             settings.write(line)
 
-    readSettings() # Update global variables
+    readSettings()  # Update global variables
     yield from bot.say("Updated settings!\nPrefix: " + prefix + "\nDescription: " + desc)
-    
+
 
 @bot.command()
 @asyncio.coroutine
