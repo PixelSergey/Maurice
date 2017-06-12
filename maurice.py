@@ -15,7 +15,7 @@ if not discord.opus.is_loaded():
     sys.exit()
 
 
-def readSettings():
+def read_settings():
     os.chdir(sys.path[0])
     with open("bot.settings", "r") as settings:
         global prefix
@@ -24,40 +24,39 @@ def readSettings():
         desc = settings.readline().strip()
 
 
-def printSettings():
+def print_settings():
     print("Prefix: " + prefix + "\tdesc: " + desc)
 
-readSettings()
-printSettings()
-print("------")
 
-bot = commands.Bot(command_prefix=prefix, description=desc)
-bot.change_presence(game=discord.Game(name="use me"))
+def update_game():
+    yield from bot.change_presence(game=discord.Game(name="Use me: " + prefix + "help"))
+
+bot = commands.Bot(command_prefix=commands.when_mentioned_or(prefix), description=desc)
 
 
 @bot.event
 @asyncio.coroutine
 def on_ready():
+    read_settings()
+    print_settings()
+    yield from update_game()
+    print("------")
     print("Logged in as")
     print(bot.user.name)
     print(bot.user.id)
     print("------")
 
 
-@bot.command(pass_context=True)
-@asyncio.coroutine
-def mhelp(ctx):
-    yield from bot.say("I do not yet have a help page")
-
-
-@bot.command()
+@bot.command(aliases=["set"])
 @asyncio.coroutine
 def settings(setting="", *, value=""):
+    """Modifies bot settings
+    Valid settings are prefix and description"""
     if value == "":
         yield from bot.say("Invalid setting, usage " + prefix + "settings <prefix|desc> <value>")
         return
     if setting == "prefix":
-        bot.command_prefix = value
+        bot.command_prefix = commands.when_mentioned_or(value)
         mode = 0
     elif setting == "desc" or setting == "description":
         bot.description = value
@@ -76,19 +75,23 @@ def settings(setting="", *, value=""):
         for line in lines:
             settings.write(line)
 
-    readSettings()  # Update global variables
+    read_settings()  # Update global variables
+    yield from update_game()  # Update command prefix if it was changed
     yield from bot.say("Updated settings!\nPrefix: " + prefix + "\nDescription: " + desc)
 
 
 @bot.command()
 @asyncio.coroutine
 def ping():
+    """Pong!
+    Yes, this is a test command"""
     yield from bot.say("Pong!")
 
 
 @bot.command(pass_context=True)
 @asyncio.coroutine
 def flip(ctx):
+    """Flips the last sent line of text upside-down"""
     msg = yield from bot.logs_from(ctx.message.channel, limit=2)
     msg = list(msg)[1].content[::-1]
     real = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890<>\"'()[]{}?¿.,!¡&"
@@ -98,9 +101,10 @@ def flip(ctx):
     yield from bot.say(msg)
 
 
-@bot.command()
+@bot.command(aliases=["sd"])
 @asyncio.coroutine
 def shutdown():
+    """Shuts Maurice down"""
     yield from bot.say("Shutting down Maurice...")
     yield from bot.say("Bye")
     yield from bot.logout()
@@ -109,8 +113,10 @@ def shutdown():
 @bot.command(pass_context=True, no_pm=True)
 @asyncio.coroutine
 def summon(ctx):
+    """Summons Maurice to your voice channel
+    Must be in a voice channel to use."""
     summon_channel = ctx.message.author.voice_channel
-    if summon_channel == None:
+    if summon_channel is None:
         yield from bot.say("You can't summon me if you're not in a channel!")
         return
     global channel
