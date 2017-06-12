@@ -8,6 +8,11 @@ import os
 
 prefix = "."
 desc = ""
+channel = None
+
+if not discord.opus.is_loaded():
+    print("Could not load the opus library; terminating")
+    sys.exit()
 
 
 def readSettings():
@@ -99,6 +104,17 @@ def shutdown():
     yield from bot.say("Shutting down Maurice...")
     yield from bot.say("Bye")
     yield from bot.logout()
+
+
+@bot.command(pass_context=True, no_pm=True)
+@asyncio.coroutine
+def summon(ctx):
+    summon_channel = ctx.message.author.voice_channel
+    if summon_channel == None:
+        yield from bot.say("You can't summon me if you're not in a channel!")
+        return
+    global channel
+    channel = yield from bot.join_voice_channel(summon_channel)
 
 
 @bot.event
