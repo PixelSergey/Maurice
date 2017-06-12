@@ -91,7 +91,8 @@ def ping():
 @bot.command(pass_context=True)
 @asyncio.coroutine
 def flip(ctx):
-    """Flips the last sent line of text upside-down"""
+    """Flips the last sent line of text upside-down
+    uʍop-ǝpᴉsdn ʇxǝʇ ɟo ǝuᴉl ʇuǝs ʇsɐl ǝɥʇ sdᴉlℲ"""
     msg = yield from bot.logs_from(ctx.message.channel, limit=2)
     msg = list(msg)[1].content[::-1]
     real = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890<>\"'()[]{}?¿.,!¡&"
