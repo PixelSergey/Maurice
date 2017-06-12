@@ -5,6 +5,8 @@ from discord.ext import commands
 import asyncio
 import sys
 import os
+import glob
+import aiohttp
 
 prefix = "."
 desc = ""
@@ -120,8 +122,107 @@ def summon(ctx):
     if summon_channel is None:
         yield from bot.say("You can't summon me if you're not in a channel!")
         return
+
     global channel
-    channel = yield from bot.join_voice_channel(summon_channel)
+    if channel is None:
+        channel = yield from bot.join_voice_channel(summon_channel)
+    else:
+        channel.move_to(summon_channel)
+
+
+@bot.command(no_pm=True, aliases=["kick"])
+@asyncio.coroutine
+def disconnect():
+    """Disconnects Maurice from the voice channel"""
+    global channel
+    if channel is None:
+        yield from bot.say("I wasn't connected in the first place")
+        return
+    
+    yield from channel.disconnect()
+    channel = None
+
+
+@bot.command(no_pm=True, aliases=["list"])
+@asyncio.coroutine
+def cliplist():
+    """Lists all sound clips"""
+    os.chdir(sys.path[0])
+    yield from bot.say("Available sound clips: " + ", ".join([os.path.basename(f.strip(".mp3")) for f in glob.glob('audio/*.mp3')]))
+
+
+@bot.command(pass_context=True, no_pm=True)
+@asyncio.coroutine
+def upload(ctx, filename=""):
+    """Lets you upload a voice clip to the bot
+    Upload a .mp3 file with the command to upload it"""
+    if filename == "":
+        yield from bot.say("Please insert a filename: usage (while uploading a file) " + prefix + "upload <filename>")
+        return
+
+    if " " in filename:
+        yield from bot.say("The filename may not contain spaces!")
+        return
+
+    if len(ctx.message.attachments) != 1:
+        yield from bot.say("You must attach one (and only one) .mp3 file to the command to upload it")
+        return
+    
+    file = ctx.message.attachments[0]
+    if not file["filename"].endswith(".mp3"):
+        yield from bot.say("The file must be an .mp3 file!")
+        return
+
+    if file["size"] > 500000:
+        yield from bot.say("The file cannot be over 500KB (roughly 10sec. high-quality .mp3)")
+        return
+
+    url = file["url"]
+    
+    try:
+        session = aiohttp.ClientSession()
+        with aiohttp.Timeout(10, loop=session.loop):
+            try:
+                response = yield from session.get(url)
+                with open("audio/" + filename + ".mp3", 'wb') as fd:
+                    while True:
+                        chunk = yield from response.content.read()
+                        if not chunk:
+                              break
+                        fd.write(chunk)
+        
+            finally:
+                response.release()
+    finally:
+        session.close()
+    
+    yield from bot.say("Written file " + filename + ".mp3 successfully!")
+
+
+@bot.command(pass_context=True, no_pm=True)
+@asyncio.coroutine
+def download(ctx, filename=""):
+    """Lets you download a clip"""
+    if filename == "":
+        yield from bot.say("You must enter a clip to download, usage: " + prefix + "download <filename>")
+        return
+    
+    os.chdir(sys.path[0])
+    yield from bot.send_file(ctx.message.channel, "audio/" + filename + ".mp3", content="Here's your file <3")
+
+
+@bot.command(no_pm=True)
+@asyncio.coroutine
+def play(clip_name=""):
+    """Plays a sound clip"""
+    os.chdir(sys.path[0])
+    if channel is None:
+        yield from bot.say("I must be in a voice channel to play clips!")
+        return
+    if clip_name == "":
+        yield from bot.say("Invalid clip name; usage " + prefix + "play <clip_name>")
+    
+    channel.create_ffmpeg_player("audio/" + clip_name + ".mp3").start()
 
 
 @bot.event

@@ -1,4 +1,4 @@
 secret.key
 bot.settings
-sound/**
-!sound/README
+audio/**
+!audio/README
