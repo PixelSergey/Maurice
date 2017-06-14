@@ -1,3 +1,3 @@
 # Maurice
 
-Maurice is a testbot made by me to test the discord.py API
+Maurice is a voice+text+chatbot made by me (Sergey) to experiment and to have a functioning voiceclip+response bot

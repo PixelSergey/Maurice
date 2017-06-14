@@ -8,7 +8,7 @@ import os
 import glob
 import aiohttp
 
-prefix = "."
+prefix = ""
 desc = ""
 channel = None
 
@@ -33,13 +33,13 @@ def print_settings():
 def update_game():
     yield from bot.change_presence(game=discord.Game(name="Use me: " + prefix + "help"))
 
+read_settings()
 bot = commands.Bot(command_prefix=commands.when_mentioned_or(prefix), description=desc)
 
 
 @bot.event
 @asyncio.coroutine
 def on_ready():
-    read_settings()
     print_settings()
     yield from update_game()
     print("------")
