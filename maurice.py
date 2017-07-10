@@ -108,7 +108,7 @@ def flip(ctx):
 @asyncio.coroutine
 def shutdown():
     """Shuts Maurice down"""
-    yield from bot.say("Shutting down Maurice...")
+    yield from bot.say("Shutting down...")
     yield from bot.say("Bye")
     yield from bot.logout()
 
@@ -128,6 +128,7 @@ def summon(ctx):
         channel = yield from bot.join_voice_channel(summon_channel)
     else:
         channel.move_to(summon_channel)
+    yield from bot.say("Summoned to channel " + channel.channel.name + " successfully!")
 
 
 @bot.command(no_pm=True, aliases=["kick"])
@@ -225,16 +226,28 @@ def play(clip_name=""):
     channel.create_ffmpeg_player("audio/" + clip_name + ".mp3").start()
 
 
+@bot.command(aliases=["respond"])
+@asyncio.coroutine
+def r(*, response=""):
+    pass
+
+
+@bot.command(pass_context=True)
+@asyncio.coroutine
+def response():
+    pass
+
+
 @bot.event
 @asyncio.coroutine
 def on_message(message):
     if message.author == bot.user:  # Do not respond to self
         return
-    if message.content.startswith("hello") or message.content.startswith("hi"):
+    if message.content[:5].lower() == "hello" or message.content[:2].lower() == "hi":
         msg = "Hello {0.author.mention}".format(message)
         yield from bot.send_message(message.channel, msg)
     yield from bot.process_commands(message)
-    if message.content.startswith("ping"):
+    if message.content[:4].lower() == "ping":
         yield from bot.send_message(message.channel, "Pong!")
 
 
