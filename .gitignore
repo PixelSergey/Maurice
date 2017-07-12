@@ -1,4 +1,5 @@
 secret.key
 bot.settings
+settings.json
 audio/**
 !audio/README

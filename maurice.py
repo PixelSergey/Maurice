@@ -7,7 +7,10 @@ import sys
 import os
 import glob
 import aiohttp
+import json
+import datetime
 
+settings = {}
 prefix = ""
 desc = ""
 channel = None
@@ -19,15 +22,23 @@ if not discord.opus.is_loaded():
 
 def read_settings():
     os.chdir(sys.path[0])
-    with open("bot.settings", "r") as settings:
+    with open("settings.json", "r") as settings_file:
+        global settings 
         global prefix
         global desc
-        prefix = settings.readline().strip()
-        desc = settings.readline().strip()
+        
+        settings = json.load(settings_file)
+        prefix = settings["prefix"]
+        desc = settings["desc"]
 
 
 def print_settings():
     print("Prefix: " + prefix + "\tdesc: " + desc)
+
+
+def set_bot_settings():
+    bot.command_prefix = commands.when_mentioned_or(prefix)
+    bot.description = desc
 
 
 def update_game():
@@ -39,10 +50,12 @@ bot = commands.Bot(command_prefix=commands.when_mentioned_or(prefix), descriptio
 
 @bot.event
 @asyncio.coroutine
-def on_ready():
-    print_settings()
+def on_ready():    
     yield from update_game()
+    print("------")    
+    print_settings()
     print("------")
+    print(datetime.datetime.now())
     print("Logged in as")
     print(bot.user.name)
     print(bot.user.id)
@@ -51,34 +64,24 @@ def on_ready():
 
 @bot.command(aliases=["set"])
 @asyncio.coroutine
-def settings(setting="", *, value=""):
+def setting(setting="", *, value=""):
     """Modifies bot settings
     Valid settings are prefix and description"""
     if value == "":
         yield from bot.say("Invalid setting, usage " + prefix + "settings <prefix|desc> <value>")
         return
-    if setting == "prefix":
-        bot.command_prefix = commands.when_mentioned_or(value)
-        mode = 0
-    elif setting == "desc" or setting == "description":
-        bot.description = value
-        mode = 1
-    else:
+    if not setting in list(settings.keys()): 
         yield from bot.say("Invalid setting, usage " + prefix + "settings <prefix|desc> <value>")
         return
 
+    settings[setting] = value
     os.chdir(sys.path[0])
-    lines = []
-    with open("bot.settings", "r+") as settings:
-        lines = settings.readlines()
-        lines[mode] = value + "\n"
-        settings.seek(0)
-        settings.truncate()
-        for line in lines:
-            settings.write(line)
+    with open("settings.json", "w") as settings_file:
+        json.dump(settings, settings_file, indent=4)
 
     read_settings()  # Update global variables
-    yield from update_game()  # Update command prefix if it was changed
+    set_bot_settings()  # Set written settings to the bot
+    yield from update_game()  # Update command prefix for bot status if it was changed
     yield from bot.say("Updated settings!\nPrefix: " + prefix + "\nDescription: " + desc)
 
 
