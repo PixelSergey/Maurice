@@ -1,6 +1,7 @@
 {
     "prefix" : ".",
-    "desc" : "Maurice, a fantastic bot"
+    "desc" : "Maurice, a fantastic bot",
+    "joinsound" : "hello"
 }
 
 # Delete these comments if you are going to use this. (Or it won't work)

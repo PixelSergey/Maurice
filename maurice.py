@@ -13,6 +13,7 @@ import datetime
 settings = {}
 prefix = ""
 desc = ""
+joinsound = ""
 channel = None
 
 if not discord.opus.is_loaded():
@@ -26,10 +27,12 @@ def read_settings():
         global settings 
         global prefix
         global desc
+        global joinsound
         
         settings = json.load(settings_file)
         prefix = settings["prefix"]
         desc = settings["desc"]
+        joinsound = settings["joinsound"]
 
 
 def print_settings():
@@ -62,16 +65,16 @@ def on_ready():
     print("------")
 
 
-@bot.command(aliases=["set"])
+@bot.command(aliases=["set", "settings"])
 @asyncio.coroutine
 def setting(setting="", *, value=""):
     """Modifies bot settings
     Valid settings are prefix and description"""
     if value == "":
-        yield from bot.say("Invalid setting, usage " + prefix + "settings <prefix|desc> <value>")
+        yield from bot.say("Invalid value, usage " + prefix + "settings <setting> <value>")
         return
     if not setting in list(settings.keys()): 
-        yield from bot.say("Invalid setting, usage " + prefix + "settings <prefix|desc> <value>")
+        yield from bot.say("Invalid setting, usage " + prefix + "settings <setting> <value>")
         return
 
     settings[setting] = value
@@ -82,7 +85,7 @@ def setting(setting="", *, value=""):
     read_settings()  # Update global variables
     set_bot_settings()  # Set written settings to the bot
     yield from update_game()  # Update command prefix for bot status if it was changed
-    yield from bot.say("Updated settings!\nPrefix: " + prefix + "\nDescription: " + desc)
+    yield from bot.say("Updated settings!\n" + ', '.join('{}: {}'.format(key, val) for key, val in settings.items()))
 
 
 @bot.command()
@@ -132,6 +135,7 @@ def summon(ctx):
     else:
         channel.move_to(summon_channel)
     yield from bot.say("Summoned to channel " + channel.channel.name + " successfully!")
+    yield from ctx.invoke(play, clip_name=joinsound)
 
 
 @bot.command(no_pm=True, aliases=["kick"])
