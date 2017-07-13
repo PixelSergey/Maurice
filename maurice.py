@@ -55,9 +55,8 @@ bot = commands.Bot(command_prefix=commands.when_mentioned_or(prefix), descriptio
 @asyncio.coroutine
 def on_ready():    
     yield from update_game()
-    print("------")    
-    print_settings()
     print("------")
+    print_settings()
     print(datetime.datetime.now())
     print("Logged in as")
     print(bot.user.name)
@@ -231,6 +230,21 @@ def upload(ctx, filename=""):
         session.close()
     
     yield from bot.say("Written file " + filename + ".mp3 successfully!")
+
+
+@bot.command(no_pm=True, aliases=["rm"])
+@asyncio.coroutine
+def remove(filename=""):
+    """Lets you remove a clip from the bot"""
+    if filename == "":
+        yield from bot.say("You must enter a clip to remove, usage: " + prefix + "remove <filename>")
+        return
+    if not os.path.isfile("audio/" + filename + ".mp3"):
+        yield from bot.say("The file " + filename + ".mp3 does not exist!")
+        return
+
+    os.remove("audio/" + filename + ".mp3")
+    yield from bot.say("Removed file " + filename + ".mp3 successfully!")
 
 
 @bot.command(pass_context=True)
