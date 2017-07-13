@@ -14,7 +14,7 @@ settings = {}
 prefix = ""
 desc = ""
 joinsound = ""
-channel = None
+channel = {}
 
 if not discord.opus.is_loaded():
     print("Could not load the opus library; terminating")
@@ -65,6 +65,30 @@ def on_ready():
     print("------")
 
 
+@bot.event
+@asyncio.coroutine
+def on_server_join(server):
+    msg = """Hello! :wave: My name is Maurice. Thanks for adding me to this server :smile:
+You can use me for voice clips, responses and more!
+Type {}help to find out more about my commands. Please test me out!
+Made by Sergey:flag_fi:. Github link: https://github.com/PixelSergey/Maurice/""".format(prefix)
+    yield from bot.send_message(server.default_channel, msg)
+
+
+@bot.event
+@asyncio.coroutine
+def on_message(message):
+    if message.author.bot:  # Do not respond to self or to other bots
+        return
+    if message.content[:5].lower() == "hello" or message.content[:2].lower() == "hi":
+        msg = "Hello {0.author.mention}".format(message)
+        yield from bot.send_message(message.channel, msg)
+    if message.content[:4].lower() == "ping":
+        yield from bot.send_message(message.channel, ":ping_pong:Pong!")
+
+    yield from bot.process_commands(message)
+
+
 @bot.command(aliases=["set", "settings"])
 @asyncio.coroutine
 def setting(setting="", *, value=""):
@@ -93,7 +117,7 @@ def setting(setting="", *, value=""):
 def ping():
     """Pong!
     Yes, this is a test command"""
-    yield from bot.say("Pong!")
+    yield from bot.say(":ping_pong:Pong!")
 
 
 @bot.command(pass_context=True)
@@ -125,33 +149,35 @@ def summon(ctx):
     """Summons Maurice to your voice channel
     Must be in a voice channel to use."""
     summon_channel = ctx.message.author.voice_channel
+    summon_server = ctx.message.server
     if summon_channel is None:
         yield from bot.say("You can't summon me if you're not in a channel!")
         return
 
     global channel
-    if channel is None:
-        channel = yield from bot.join_voice_channel(summon_channel)
+    if not summon_server in channel:
+        channel[summon_server] = yield from bot.join_voice_channel(summon_channel)
     else:
-        channel.move_to(summon_channel)
-    yield from bot.say("Summoned to channel " + channel.channel.name + " successfully!")
+        channel[summon_server].move_to(summon_channel)
+    yield from bot.say("Summoned to channel " + channel[summon_server].channel.name + " successfully!")
     yield from ctx.invoke(play, clip_name=joinsound)
 
 
-@bot.command(no_pm=True, aliases=["kick"])
+@bot.command(no_pm=True, pass_context=True, aliases=["kick"])
 @asyncio.coroutine
-def disconnect():
+def disconnect(ctx):
     """Disconnects Maurice from the voice channel"""
     global channel
-    if channel is None:
+    disconnect_server = ctx.message.server
+    if not disconnect_server in channel:
         yield from bot.say("I wasn't connected in the first place")
         return
     
-    yield from channel.disconnect()
-    channel = None
+    yield from channel[disconnect_server].disconnect()
+    del channel[disconnect_server]
 
 
-@bot.command(no_pm=True, aliases=["list"])
+@bot.command(aliases=["list"])
 @asyncio.coroutine
 def cliplist():
     """Lists all sound clips"""
@@ -207,7 +233,7 @@ def upload(ctx, filename=""):
     yield from bot.say("Written file " + filename + ".mp3 successfully!")
 
 
-@bot.command(pass_context=True, no_pm=True)
+@bot.command(pass_context=True)
 @asyncio.coroutine
 def download(ctx, filename=""):
     """Lets you download a clip"""
@@ -219,18 +245,19 @@ def download(ctx, filename=""):
     yield from bot.send_file(ctx.message.channel, "audio/" + filename + ".mp3", content="Here's your file <3")
 
 
-@bot.command(no_pm=True)
+@bot.command(no_pm=True, pass_context=True)
 @asyncio.coroutine
-def play(clip_name=""):
+def play(ctx, clip_name=""):
     """Plays a sound clip"""
-    os.chdir(sys.path[0])
-    if channel is None:
+    play_server = ctx.message.server
+    if not play_server in channel:
         yield from bot.say("I must be in a voice channel to play clips!")
         return
     if clip_name == "":
         yield from bot.say("Invalid clip name; usage " + prefix + "play <clip_name>")
     
-    channel.create_ffmpeg_player("audio/" + clip_name + ".mp3").start()
+    os.chdir(sys.path[0])
+    channel[play_server].create_ffmpeg_player("audio/" + clip_name + ".mp3").start()
 
 
 @bot.command(aliases=["respond"])
@@ -243,19 +270,6 @@ def r(*, response=""):
 @asyncio.coroutine
 def response():
     pass
-
-
-@bot.event
-@asyncio.coroutine
-def on_message(message):
-    if message.author == bot.user:  # Do not respond to self
-        return
-    if message.content[:5].lower() == "hello" or message.content[:2].lower() == "hi":
-        msg = "Hello {0.author.mention}".format(message)
-        yield from bot.send_message(message.channel, msg)
-    yield from bot.process_commands(message)
-    if message.content[:4].lower() == "ping":
-        yield from bot.send_message(message.channel, "Pong!")
 
 
 # Get key, initialize bot
