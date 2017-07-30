@@ -3,3 +3,4 @@ bot.settings
 settings.json
 audio/**
 !audio/README
+cogs/__pycache__/

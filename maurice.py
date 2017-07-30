@@ -9,43 +9,11 @@ import glob
 import aiohttp
 import json
 import datetime
-
-settings = {}
-prefix = ""
-desc = ""
-joinsound = ""
-channel = {}
+from cogs.utils import *
 
 if not discord.opus.is_loaded():
     print("Could not load the opus library; terminating")
     sys.exit()
-
-
-def read_settings():
-    os.chdir(sys.path[0])
-    with open("settings.json", "r") as settings_file:
-        global settings 
-        global prefix
-        global desc
-        global joinsound
-        
-        settings = json.load(settings_file)
-        prefix = settings["prefix"]
-        desc = settings["desc"]
-        joinsound = settings["joinsound"]
-
-
-def print_settings():
-    print("Prefix: " + prefix + "\tdesc: " + desc)
-
-
-def set_bot_settings():
-    bot.command_prefix = commands.when_mentioned_or(prefix)
-    bot.description = desc
-
-
-def update_game():
-    yield from bot.change_presence(game=discord.Game(name="Use me: " + prefix + "help"))
 
 read_settings()
 bot = commands.Bot(command_prefix=commands.when_mentioned_or(prefix), description=desc)
@@ -109,37 +77,6 @@ def setting(setting="", *, value=""):
     set_bot_settings()  # Set written settings to the bot
     yield from update_game()  # Update command prefix for bot status if it was changed
     yield from bot.say("Updated settings!\n" + ', '.join('{}: {}'.format(key, val) for key, val in settings.items()))
-
-
-@bot.command()
-@asyncio.coroutine
-def ping():
-    """Pong!
-    Yes, this is a test command"""
-    yield from bot.say(":ping_pong:Pong!")
-
-
-@bot.command(pass_context=True)
-@asyncio.coroutine
-def flip(ctx):
-    """Flips the last sent line of text upside-down
-    uʍop-ǝpᴉsdn ʇxǝʇ ɟo ǝuᴉl ʇuǝs ʇsɐl ǝɥʇ sdᴉlℲ"""
-    msg = yield from bot.logs_from(ctx.message.channel, limit=2)
-    msg = list(msg)[1].content[::-1]
-    real = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890<>\"'()[]{}?¿.,!¡&"
-    flipped = "∀qƆpƎℲפHIſʞ˥WNOԀQɹS┴∩ΛMX⅄ZɐqɔpǝɟƃɥᴉɾʞlɯuodbɹsʇnʌʍxʎzƖᄅƐㄣϛ9ㄥ860><„,)(][}{¿?˙'¡!⅋"
-    tbl = str.maketrans(real, flipped)
-    msg = msg.translate(tbl)
-    yield from bot.say(msg)
-
-
-@bot.command(aliases=["sd"])
-@asyncio.coroutine
-def shutdown():
-    """Shuts Maurice down"""
-    yield from bot.say("Shutting down...")
-    yield from bot.say("Bye")
-    yield from bot.logout()
 
 
 @bot.command(pass_context=True, no_pm=True)
@@ -281,10 +218,19 @@ def response():
     pass
 
 
-# Get key, initialize bot
+# Start bot
+
+for cog in os.listdir("cogs"):
+    if cog.endswith('.py') and cog != "utils.py":
+        try:
+            bot.load_extension("cogs." + cog[:-3])
+        except Exception as e:
+            print("Failed to load the cog %s, error:\n%s:%s" % (cog, type(e).__name__, e))
+
 os.chdir(sys.path[0])
 with open("secret.key", "r") as secret:
     key = secret.readline().strip()
+
 
 bot.run(key)
 

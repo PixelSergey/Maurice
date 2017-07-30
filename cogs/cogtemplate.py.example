@@ -1,0 +1,17 @@
+import discord
+from discord.ext import commands
+import asyncio
+
+class Template():
+    def __init__(self, bot):
+        self.bot = bot
+
+    
+    @commands.command()
+    @asyncio.coroutine
+    def command1():
+        pass
+
+
+def setup(bot):
+    bot.add_cog(Template(bot))
