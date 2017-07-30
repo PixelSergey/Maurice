@@ -274,15 +274,10 @@ def play(ctx, clip_name=""):
     channel[play_server].create_ffmpeg_player("audio/" + clip_name + ".mp3").start()
 
 
-@bot.command(aliases=["respond"])
-@asyncio.coroutine
-def r(*, response=""):
-    pass
-
-
-@bot.command(pass_context=True)
+@bot.command(pass_context=True, no_pm=True, aliases=["r"])
 @asyncio.coroutine
 def response():
+    """Lets you add a response"""
     pass
 
 
